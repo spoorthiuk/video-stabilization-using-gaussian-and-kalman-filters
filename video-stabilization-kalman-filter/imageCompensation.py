@@ -63,6 +63,7 @@ for i in range(len(feature_points)):
 
 filtered_features1 = np.array(filtered_features1)
 filtered_features2 = np.array(filtered_features2)
+print(filtered_features1[1],filtered_features2[1])
 affine,_ = cv2.estimateAffine2D(filtered_features1, filtered_features2)
 
 dx = affine[0, 2]

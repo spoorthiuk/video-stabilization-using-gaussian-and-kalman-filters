@@ -79,7 +79,7 @@ class VideoStabilization():
     def stabilize(self, frame1, frame2):
         frame1 = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
         frame2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
-        rows, cols = frame1.shape()
+        rows, cols = frame1.shape
         verticalBorder = self.horizontalBorder * rows / cols
         
         #track features between frames
@@ -91,9 +91,12 @@ class VideoStabilization():
         goodFeatures1 = []
         goodFeatures2 = []
         for i in range(0,len(status)):
-            goodFeatures1.append(tuple(features1[i][0]))
-            goodFeatures2.append(tuple(features2[i]))
-        
+            pt1 = tuple(features1[i][0])
+            pt2 = tuple(features2[i])
+            goodFeatures1.append(pt1)
+            goodFeatures2.append(pt2)
+        goodFeatures1 = np.array(goodFeatures1)
+        goodFeatures2 = np.array(goodFeatures2)
         affine,_ = cv2.estimateAffine2D(goodFeatures1, goodFeatures2)
         dx = affine[0, 2]
         dy = affine[1, 2]
@@ -115,3 +118,50 @@ class VideoStabilization():
             self.k +=1
         else:
             self.kalman_filter()
+
+        diffScaleX = self.scaleX - self.sumScaleX
+        diffScaleY = self.scaleY - self.sumScaleY
+        diffTheta = self.theta - self.sumTheta
+        diffTransX = self.transX - self.sumTransX
+        diffTransY = self.transY - self.sumTransY
+
+        ds_x = ds_x + diffScaleX
+        ds_y = ds_y + diffScaleY
+        dx = dx + diffTransX
+        dy = dy + diffTransY
+
+        self.smoothedMat[0,0] = sx * np.cos(da)
+        self.smoothedMat[0,1] = sx * -np.sin(da)
+        self.smoothedMat[1,0] = sy * np.sin(da)
+        self.smoothedMat[1,1] = sy * np.cos(da)
+
+        self.smoothedMat[0,2] = dx
+        self.smoothedMat[1,2] = dy
+
+        smoothedFrame = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
+        #print(verticalBorder,smoothedFrame.shape[0]-verticalBorder)
+        #smoothedFrame = smoothedFrame[verticalBorder:smoothedFrame.shape[0]-verticalBorder,self.horizontalBorder:smoothedFrame.shape[1]-self.horizontalBorder]
+
+        plt.figure()
+        plt.imshow(frame1)
+        plt.figure()
+        plt.imshow(frame2)
+        plt.figure()
+        plt.imshow(smoothedFrame)
+        plt.show()
+
+cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Foreman360p.mp4')
+if (cap.isOpened()== False):
+    print("Error openingfile")
+#read 40 frames and store it in a list
+frames = []
+for _ in range(0,40):
+    ret, frame = cap.read()
+    if ret:
+        #gray_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+        frames.append(frame)
+        #frames.append(gray_frame)
+
+VS = VideoStabilization(frames[0].shape[1])
+
+VS.stabilize(frames[0],frames[1])
