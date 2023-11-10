@@ -6,7 +6,7 @@ Q1 = 0.004
 R1 = 0.5
 
 class VideoStabilization():
-    def __init__(self, horzontalBorder) -> None:
+    def __init__(self) -> None:
         self.k = 1
         self.errorScaleX = 1
         self.errorScaleY = 1
@@ -38,7 +38,7 @@ class VideoStabilization():
         self.transX = 0
         self.transY = 0
 
-        self.horizontalBorder = horzontalBorder
+        self.horizontalBorder = 70
 
         self.smoothedMat = np.zeros((2, 3), dtype=np.float64)
         pass
@@ -139,29 +139,35 @@ class VideoStabilization():
         self.smoothedMat[1,2] = dy
 
         smoothedFrame = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
-        #print(verticalBorder,smoothedFrame.shape[0]-verticalBorder)
-        #smoothedFrame = smoothedFrame[verticalBorder:smoothedFrame.shape[0]-verticalBorder,self.horizontalBorder:smoothedFrame.shape[1]-self.horizontalBorder]
+        print(int(verticalBorder),int(smoothedFrame.shape[0]-verticalBorder))
+        smoothedFrame = smoothedFrame[int(verticalBorder):int(smoothedFrame.shape[0]-verticalBorder),self.horizontalBorder:smoothedFrame.shape[1]-self.horizontalBorder]
 
-        plt.figure()
-        plt.imshow(frame1)
-        plt.figure()
-        plt.imshow(frame2)
-        plt.figure()
-        plt.imshow(smoothedFrame)
-        plt.show()
+        return smoothedFrame
 
-cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Foreman360p.mp4')
+cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
 if (cap.isOpened()== False):
     print("Error openingfile")
 #read 40 frames and store it in a list
 frames = []
-for _ in range(0,40):
+for _ in range(0,100):
     ret, frame = cap.read()
     if ret:
         #gray_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
         frames.append(frame)
         #frames.append(gray_frame)
 
-VS = VideoStabilization(frames[0].shape[1])
+VS = VideoStabilization()
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+smoothFrame = VS.stabilize(frames[0],frames[1])
+width, height = smoothFrame.shape
+output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/stabilized_video_32.mp4'
+video_writer = cv2.VideoWriter(output_video, fourcc, 30, (width, height))
+for i in range(1,100):
+    smoothFrame = VS.stabilize(frames[i-1],frames[i])
+    plt.figure()
+    plt.imshow(cv2.cvtColor(smoothFrame, cv2.COLOR_GRAY2BGR))
+    plt.show()
+    video_writer.write(cv2.cvtColor(smoothFrame, cv2.COLOR_GRAY2BGR))
+    #video_writer.write(cv2.cvtColor(smoothFrame, cv2.COLOR_YCR_CB2BGR))
 
-VS.stabilize(frames[0],frames[1])
+print("Video saved to:", output_video)
