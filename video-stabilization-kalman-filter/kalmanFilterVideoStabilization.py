@@ -77,6 +77,7 @@ class VideoStabilization():
         pass
 
     def stabilize(self, frame1, frame2):
+        #print(frame1[0].shape)
         frame1 = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
         frame2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
         rows, cols = frame1.shape
@@ -160,14 +161,15 @@ VS = VideoStabilization()
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 smoothFrame = VS.stabilize(frames[0],frames[1])
 width, height = smoothFrame.shape
+print(width,height)
 output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/stabilized_video_32.mp4'
 video_writer = cv2.VideoWriter(output_video, fourcc, 30, (width, height))
 for i in range(1,100):
     smoothFrame = VS.stabilize(frames[i-1],frames[i])
-    plt.figure()
-    plt.imshow(cv2.cvtColor(smoothFrame, cv2.COLOR_GRAY2BGR))
-    plt.show()
-    video_writer.write(cv2.cvtColor(smoothFrame, cv2.COLOR_GRAY2BGR))
+    #plt.figure()
+    #plt.imshow(cv2.merge([smoothFrame,smoothFrame,smoothFrame]))
+    #plt.show()
+    video_writer.write(frames[i])
     #video_writer.write(cv2.cvtColor(smoothFrame, cv2.COLOR_YCR_CB2BGR))
-
+video_writer.release()
 print("Video saved to:", output_video)
