@@ -9,7 +9,7 @@ from skimage.metrics import structural_similarity
 from matplotlib.animation import FuncAnimation
 
 Q1 = 0.004
-R1 = 0.5git 
+R1 = 0.5
 ORG_TRANSX = []
 ORG_TRANSY = []
 GAUSSIAN_TRANSX = []
