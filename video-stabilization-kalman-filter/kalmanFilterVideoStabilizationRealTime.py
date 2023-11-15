@@ -15,6 +15,27 @@ KALMAN_TRANSY = []
 ORG_SSIM = []
 STB_SSIM = []
 
+def brightness(image, value):
+    return np.clip(image * value, 0, 255).astype(np.uint8)
+
+def contrast(image, value):
+    mean = np.mean(image)
+    return np.clip((image - mean) * value + mean, 0, 255).astype(np.uint8) 
+
+def sharpening(frame):
+    #High Pass Filterning and Gaussian Low Pass Filter
+    filter_3x3_hpf = np.array([[0,-1,0],[-1,5,-1],[0,-1,0]])
+    filtered_frame = cv2.filter2D(frame,-1,filter_3x3_hpf)
+    gaussian_kernel_size = (5,5)
+    filtered_frame = cv2.GaussianBlur(filtered_frame, gaussian_kernel_size, sigmaX=1.2)
+    return filtered_frame
+
+def preProcessing(frame):
+    luminance_frame = brightness(frame, 0.9)
+    contrast_frame = contrast(luminance_frame, 1.2)
+    filtered_frame = sharpening(contrast_frame)
+    return filtered_frame
+
 #function for getting the Mean Squared Error of two images
 def MSE(img1, img2):
     if img1.size != img2.size:
@@ -286,7 +307,7 @@ sleep(2)
 print('Done Sleep...')
 frames = []
 VS = VideoStabilization()
-output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/stabilized_video_real_time.mp4'
+output_video = "stabilized_video_real_time.mp4"
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 output_video = "stabilized_output_Real.mp4"
@@ -299,48 +320,22 @@ while(len(frames) < 200):
     if not ret: 
         break
     frames.append(frame)
-    if len(frames) > 2 and len(frames) < 200:
-        smoothFrame = VS.stabilize(frames[-2],frames[-1])
+    if len(frames) > 1 and len(frames) < 200:
+        prev_frame = preProcessing(frames[-2])
+        cur_frame = preProcessing(frames[-1])
+        smoothFrame = VS.stabilize(prev_frame,cur_frame)
         smoothFrame = cv2.resize(smoothFrame,(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
-        prev_frame_gray = cv2.cvtColor(frames[-2],cv2.COLOR_BGR2GRAY)
-        cur_frame_gray = cv2.cvtColor(frames[-1],cv2.COLOR_BGR2GRAY)
+        prev_frame_gray = cv2.cvtColor(prev_frame,cv2.COLOR_BGR2GRAY)
+        cur_frame_gray = cv2.cvtColor(cur_frame,cv2.COLOR_BGR2GRAY)
         #print(f'{i}: Original MSE = {MSE(prev_frame_gray,cur_frame_gray)}, PSNR = {PSNR(MSE(prev_frame_gray,cur_frame_gray))}, SSIM = {SSIM(prev_frame_gray,cur_frame_gray)}')
         ORG_SSIM.append(SSIM(prev_frame_gray,cur_frame_gray))
-        video_writer.write(smoothFrame)
-        smooth_frames.append(smoothFrame)
-        #print(smooth_frames)
-plt.imshow(smooth_frames[-1])
-plt.show()
-exit()
+        output_frame = cv2.hconcat([frames[-1], smoothFrame])
+        if(cv2.waitKey(1)):
+            cv2.imshow('Real-time Processing', output_frame)
 
-for _ in range(0,1000):
-    ret, frame = cap.read()
-    if ret:
-        frames.append(frame)
-output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/stabilized_video_32.mp4'
-VS = VideoStabilization()
-smoothFrame = VS.stabilize(frames[0],frames[1])
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-#output_video = "stabilized_output.mp4"
-fourcc = cv2.VideoWriter_fourcc(*'H264')
-fps = 30
-video_writer = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
-for i in range(1,200):
-    smoothFrame = VS.stabilize(frames[i-1],frames[i])
-    smoothFrame = cv2.resize(smoothFrame,(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
-    prev_frame_gray = cv2.cvtColor(frames[i-1],cv2.COLOR_BGR2GRAY)
-    cur_frame_gray = cv2.cvtColor(frames[i],cv2.COLOR_BGR2GRAY)
-    #print(f'{i}: Original MSE = {MSE(prev_frame_gray,cur_frame_gray)}, PSNR = {PSNR(MSE(prev_frame_gray,cur_frame_gray))}, SSIM = {SSIM(prev_frame_gray,cur_frame_gray)}')
-    ORG_SSIM.append(SSIM(prev_frame_gray,cur_frame_gray))
-    video_writer.write(smoothFrame)
-cap.release()
-video_writer.release()
-cv2.destroyAllWindows()
-print("Video saved to:", output_video)
 
 plt.style.use('ggplot')
-plot_line_animation()
+plot_line_graph()
 
 plot_ssim()
 
