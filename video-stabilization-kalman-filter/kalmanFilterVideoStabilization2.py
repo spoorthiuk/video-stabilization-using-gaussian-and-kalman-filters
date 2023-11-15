@@ -89,6 +89,7 @@ def plot_line_animation():
         ax2.legend(['Orginal video','Kalman Filter stabilized video'])
     t = range(len(ORG_TRANSX))
     fig, (ax1, ax2) = plt.subplots(1,2)
+    fig.set_size_inches([20,10])
     anim = FuncAnimation(fig, animate, frames = len(t), interval = 100)
     anim.save('animation.gif', writer='imagemagick', fps=30)
     plt.show()
