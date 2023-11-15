@@ -149,7 +149,7 @@ class VideoStabilization():
         self.transX = 0
         self.transY = 0
 
-        self.horizontalBorder = 70
+        self.horizontalBorder = 100
 
         self.smoothedMat = np.zeros((2, 3), dtype=np.float64)
         pass
@@ -197,9 +197,9 @@ class VideoStabilization():
         verticalBorder = self.horizontalBorder * rows / cols
         
         #track features between frames
-        noOfFramesToTrack = 200
+        noOfFramesToTrack = 300
         featureTrackingThreshold = 0.01
-        minDistanceBetweenPoints = 10
+        minDistanceBetweenPoints = 5
         features1 = cv2.goodFeaturesToTrack(frame1, noOfFramesToTrack, featureTrackingThreshold, minDistanceBetweenPoints)
         features2, status, error = cv2.calcOpticalFlowPyrLK(frame1, frame2, features1, None)
         goodFeatures1 = []
@@ -264,7 +264,7 @@ class VideoStabilization():
         #print(colour_frame2.shape)
         #smoothenedFrame = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
         smoothenedFrame = cv2.warpAffine(colour_frame1, self.smoothedMat, frame2.shape[::-1])
-        smoothenedFrame = smoothenedFrame[int(verticalBorder):int(smoothenedFrame.shape[0]-verticalBorder),self.horizontalBorder:smoothenedFrame.shape[1]-self.horizontalBorder]
+        smoothenedFrame = smoothenedFrame[int(verticalBorder)+50:int(smoothenedFrame.shape[0]-verticalBorder)-50,self.horizontalBorder+50:smoothenedFrame.shape[1]-self.horizontalBorder-50]
         smoothenedFrame_gray = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
         smoothenedFrame_gray = smoothenedFrame_gray[int(verticalBorder):int(smoothenedFrame_gray.shape[0]-verticalBorder),self.horizontalBorder:smoothenedFrame_gray.shape[1]-self.horizontalBorder]
             
@@ -298,7 +298,7 @@ class VideoStabilization():
         self.prev_frame = smoothenedFrame_gray
         return smoothenedFrame
 
-cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Drone_footage.mp4')
+cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
 if (cap.isOpened()== False):
     print("Error openingfile")
 frames = []
@@ -306,17 +306,15 @@ for _ in range(0,1000):
     ret, frame = cap.read()
     if ret:
         frames.append(frame)
-print(frame)
 output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Drone_footage_enhanced.mp4'
 VS = VideoStabilization()
-smoothFrame = VS.stabilize(frames[0],frames[1])
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 #output_video = "stabilized_output.mp4"
 fourcc = cv2.VideoWriter_fourcc(*'H264')
 fps = 30
 video_writer = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
-for i in range(1,400):
+for i in range(1,200):
     prev_frame = preProcessing(frames[i-1])
     cur_frame = preProcessing(frames[i])
     smoothFrame = VS.stabilize(prev_frame,cur_frame)
@@ -332,8 +330,8 @@ cv2.destroyAllWindows()
 print("Video saved to:", output_video)
 
 plt.style.use('ggplot')
-plot_line_animation()
-
+#plot_line_animation()
+plot_line_graph()
 plot_ssim()
 
 print(f'Average SSIM:\n1) Original Video:{np.average(ORG_SSIM)}\n2) Kalman Filter stabilized Video:{np.average(STB_SSIM)}')
