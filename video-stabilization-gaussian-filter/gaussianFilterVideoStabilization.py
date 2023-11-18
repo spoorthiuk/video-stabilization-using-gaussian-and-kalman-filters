@@ -219,8 +219,15 @@ class VideoStabilization():
         print('Shape Trajectory:',smoothed_trajectory.shape)
         smoothened_frames= self.apply_warping_fullview(warp_stack=warp_stack-smoothed_warp)
         return smoothened_frames
-    
-cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
+
+input_output_path = {
+    'rover1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/rover1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_rover1.mp4'],
+    'drone' : []
+}
+video = 'rover1'
+#cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
+input_video = input_output_path[video][0]
+cap = cv2.VideoCapture(input_video)
 if (cap.isOpened()== False):
     print("Error openingfile")
 frames = []
@@ -229,7 +236,8 @@ for _ in range(0,1000):
     if ret:
         frames.append(frame)
 
-output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Gaussian_Drone_footage_enhanced.mp4'
+#output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Gaussian_Drone_footage_enhanced.mp4'
+output_video = input_output_path[video][1]
 VS = VideoStabilization()
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))

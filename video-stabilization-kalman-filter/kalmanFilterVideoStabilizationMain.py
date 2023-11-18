@@ -149,7 +149,7 @@ class VideoStabilization():
         self.transX = 0
         self.transY = 0
 
-        self.horizontalBorder = 100
+        self.horizontalBorder = 10
 
         self.smoothedMat = np.zeros((2, 3), dtype=np.float64)
         pass
@@ -264,7 +264,7 @@ class VideoStabilization():
         #print(colour_frame2.shape)
         #smoothenedFrame = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
         smoothenedFrame = cv2.warpAffine(colour_frame1, self.smoothedMat, frame2.shape[::-1])
-        smoothenedFrame = smoothenedFrame[int(verticalBorder)+50:int(smoothenedFrame.shape[0]-verticalBorder)-50,self.horizontalBorder+50:smoothenedFrame.shape[1]-self.horizontalBorder-50]
+        smoothenedFrame = smoothenedFrame[int(verticalBorder):int(smoothenedFrame.shape[0]-verticalBorder),self.horizontalBorder:smoothenedFrame.shape[1]-self.horizontalBorder]
         smoothenedFrame_gray = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
         smoothenedFrame_gray = smoothenedFrame_gray[int(verticalBorder):int(smoothenedFrame_gray.shape[0]-verticalBorder),self.horizontalBorder:smoothenedFrame_gray.shape[1]-self.horizontalBorder]
             
@@ -298,7 +298,14 @@ class VideoStabilization():
         self.prev_frame = smoothenedFrame_gray
         return smoothenedFrame
 
-cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
+input_output_path = {
+    'rover1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/rover1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_rover1.mp4'],
+    'basketball' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/basketball.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_basketball.mp4'],
+}
+video = 'rover1'
+#cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
+input_video = input_output_path[video][0]
+cap = cv2.VideoCapture(input_video)
 if (cap.isOpened()== False):
     print("Error openingfile")
 frames = []
@@ -306,7 +313,8 @@ for _ in range(0,1000):
     ret, frame = cap.read()
     if ret:
         frames.append(frame)
-output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Drone_footage_enhanced.mp4'
+#output_video = '/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Drone_footage_enhanced.mp4'
+output_video = input_output_path[video][1]
 VS = VideoStabilization()
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
