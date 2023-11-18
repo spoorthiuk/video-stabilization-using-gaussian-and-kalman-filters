@@ -12,6 +12,7 @@ Q1 = 0.004
 R1 = 0.5
 ORG_TRANSX = []
 ORG_TRANSY = []
+
 GAUSSIAN_TRANSX = []
 GAUSSIAN_TRANSY = []
 
@@ -249,12 +250,81 @@ thickness = 2
 smoothFrames = VS.stabilize(frame_stack)
 padding_ver = 50
 padding_hor = int(padding_ver * 606/1000)
-
+smoothFramesResized = []
 for smoothFrame in smoothFrames:
     print(frame.shape,smoothFrame.shape)
     smoothFrame = cv2.resize(smoothFrame[int(VS.left)+padding_ver:int(smoothFrame.shape[0]-VS.right-padding_ver),VS.top+padding_hor:smoothFrame.shape[1]-VS.bottom-padding_hor], (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+    smoothFramesResized.append(smoothFrame)
     video_writer.write(smoothFrame)
 cap.release()
 video_writer.release()
 cv2.destroyAllWindows()
 print("Video saved to:", output_video)
+
+#plotting the tranformation for original and stabilized video
+#original video
+noOfFramesToTrack = 300
+featureTrackingThreshold = 0.01
+minDistanceBetweenPoints = 10
+#for i in range(1, len(frames)):
+for i in range(1, len(smoothFramesResized)):
+    try:
+        frame1 = frames[i-1]
+        frame2 = frames[i]
+        #ORG_SSIM.append(SSIM(frames[i-1],frames[i]))
+        frame1 = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
+        frame2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
+        ORG_SSIM.append(SSIM(frame1,frame2))
+        features1 = cv2.goodFeaturesToTrack(frame1, noOfFramesToTrack, featureTrackingThreshold, minDistanceBetweenPoints)
+        features2, status, error = cv2.calcOpticalFlowPyrLK(frame1, frame2, features1, None)
+        goodFeatures1 = []
+        goodFeatures2 = []
+        for i in range(0,len(status)):
+            if(status[i]):
+                pt1 = tuple(features1[i][0])
+                pt2 = tuple(features2[i])
+                goodFeatures1.append(pt1)
+                goodFeatures2.append(pt2)
+        goodFeatures1 = np.array(goodFeatures1)
+        goodFeatures2 = np.array(goodFeatures2)
+        affine,_ = cv2.estimateAffine2D(goodFeatures1, goodFeatures2)
+        dx = affine[0, 2]
+        dy = affine[1, 2]
+        ORG_TRANSX.append(dx)
+        ORG_TRANSY.append(dy)
+    except:
+        pass
+#Stabilized video
+for i in range(1, len(smoothFramesResized)):
+    try:
+        frame1 = smoothFramesResized[i-1]
+        frame2 = smoothFramesResized[i]
+        frame1 = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
+        frame2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
+        STB_SSIM.append(SSIM(frame1,frame2))
+        features1 = cv2.goodFeaturesToTrack(frame1, noOfFramesToTrack, featureTrackingThreshold, minDistanceBetweenPoints)
+        features2, status, error = cv2.calcOpticalFlowPyrLK(frame1, frame2, features1, None)
+        goodFeatures1 = []
+        goodFeatures2 = []
+        for i in range(0,len(status)):
+            if(status[i]):
+                pt1 = tuple(features1[i][0])
+                pt2 = tuple(features2[i])
+                goodFeatures1.append(pt1)
+                goodFeatures2.append(pt2)
+        goodFeatures1 = np.array(goodFeatures1)
+        goodFeatures2 = np.array(goodFeatures2)
+        affine,_ = cv2.estimateAffine2D(goodFeatures1, goodFeatures2)
+        dx = affine[0, 2]
+        dy = affine[1, 2]
+        GAUSSIAN_TRANSX.append(dx)
+        GAUSSIAN_TRANSY.append(dy)
+    except:
+        pass
+
+plt.style.use('ggplot')
+#plot_line_animation()
+plot_line_graph()
+plot_ssim()
+
+print(f'Average SSIM:\n1) Original Video:{np.average(ORG_SSIM)}\n2) Kalman Filter stabilized Video:{np.average(STB_SSIM)}')
