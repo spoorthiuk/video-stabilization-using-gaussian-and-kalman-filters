@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity
 from matplotlib.animation import FuncAnimation
 
+#Defining the process and measurement noise for the Kalman Filter
 Q1 = 0.004
 R1 = 0.5
+
+#Defining the lists used in recording measurements
 ORG_TRANSX = []
 ORG_TRANSY = []
 KALMAN_TRANSX = []
@@ -13,27 +16,53 @@ KALMAN_TRANSY = []
 
 ORG_SSIM = []
 STB_SSIM = []
+VID_ORG_SSIM = []
+VID_STB_SSIM = []
 
 def brightness(image, value):
+    #modifys the luminance of a given image
     return np.clip(image * value, 0, 255).astype(np.uint8)
 
 def contrast(image, value):
+    #modifys the contrast of a given image
     mean = np.mean(image)
     return np.clip((image - mean) * value + mean, 0, 255).astype(np.uint8) 
 
 def sharpening(frame):
-    #High Pass Filterning and Gaussian Low Pass Filter
+    #High Pass Filterning the given image
     filter_3x3_hpf = np.array([[0,-1,0],[-1,5,-1],[0,-1,0]])
     filtered_frame = cv2.filter2D(frame,-1,filter_3x3_hpf)
-    gaussian_kernel_size = (5,5)
-    filtered_frame = cv2.GaussianBlur(filtered_frame, gaussian_kernel_size, sigmaX=1.2)
+    return filtered_frame
+
+def smoothening(frame):
+    #Gaussian Low Pass Filterning the given image
+    gaussian_kernel_size = (3,3)
+    filtered_frame = cv2.GaussianBlur(filtered_frame, gaussian_kernel_size, sigmaX=0.2)
     return filtered_frame
 
 def preProcessing(frame):
-    luminance_frame = brightness(frame, 0.9)
-    contrast_frame = contrast(luminance_frame, 1.2)
-    filtered_frame = sharpening(contrast_frame)
+    luminance_frame = brightness(frame,1.1)
+    contrast_frame = contrast(luminance_frame, 0.9)
+    sharpened_frame = sharpening(contrast_frame)
+    filtered_frame = sharpened_frame
+    #low_pass_frame = sharpening(sharpened_frame)
+    '''plt.figure()
+    plt.subplot(1,4,1)
+    plt.imshow(cv2.cvtColor(luminance_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Enhanced Luminance')
+    plt.subplot(1,4,2)
+    plt.imshow(cv2.cvtColor(contrast_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Enhanced Luminance + Contrast')
+    plt.subplot(1,4,3)
+    plt.imshow(cv2.cvtColor(sharpened_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Sharpened + Enhanced Luminance + Contrast')
+    plt.subplot(1,4,4)
+    plt.imshow(cv2.cvtColor(low_pass_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Sharpened + Low Pas + Enhanced Luminance + Contrast')
+    plt.show()
+    exit()'''
     return filtered_frame
+    #return contrast_frame
 
 #function for getting the Mean Squared Error of two images
 def MSE(img1, img2):
@@ -57,6 +86,17 @@ def PSNR(mse):
 
 def SSIM(img1, img2):
     return round(structural_similarity(img1, img2, win_size= 5),2)
+
+def video_SSIM(img1, img2):
+    Wy = 0.8
+    Wcb = 0.1
+    Wcr = 0.1
+    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2YCrCb)
+    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2YCrCb)
+    Y_org, Cb_org, Cr_org = cv2.split(img1)
+    Y_stab, Cb_stab, Cr_stab = cv2.split(img2)
+    ssim = Wy* SSIM(Y_org,Y_stab) + Wcb* SSIM(Cb_org,Cb_stab) + Wcr* SSIM(Cr_org,Cr_stab)
+    return ssim
 
 #Function to plot normal line graph
 def plot_line_graph():
@@ -119,6 +159,7 @@ class VideoStabilization():
     def __init__(self) -> None:
         self.k = 1
         self.prev_frame = ''
+        self.prev_frame_color = ''
         self.errorScaleX = 1
         self.errorScaleY = 1
         self.errorTheta = 1
@@ -252,7 +293,7 @@ class VideoStabilization():
         dx = dx + diffTransX
         dy = dy + diffTransY
         da = da + diffTheta
-
+        
         self.smoothedMat[0,0] = sx * np.cos(da)
         self.smoothedMat[0,1] = sx * -np.sin(da)
         self.smoothedMat[1,0] = sy * np.sin(da)
@@ -295,21 +336,23 @@ class VideoStabilization():
             KALMAN_TRANSY.append(dy)
             #print(f'KALMAN MSE = {MSE(self.prev_frame,smoothenedFrame_gray)}, PSNR = {PSNR(MSE(self.prev_frame,smoothenedFrame_gray))}, SSIM = {SSIM(self.prev_frame,smoothenedFrame_gray)}')
             STB_SSIM.append(SSIM(self.prev_frame,smoothenedFrame_gray))
+            VID_STB_SSIM.append(video_SSIM(self.prev_frame_color,smoothenedFrame))
         self.prev_frame = smoothenedFrame_gray
+        self.prev_frame_color = smoothenedFrame
         return smoothenedFrame
 
 input_output_path = {
-    'rover1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/rover1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_rover1.mp4'],
+    'outdoor2' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor4.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor4.mp4'],
     'basketball' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/basketball.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_basketball.mp4'],
 }
-video = 'rover1'
+video = 'outdoor2'
 #cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
 input_video = input_output_path[video][0]
 cap = cv2.VideoCapture(input_video)
 if (cap.isOpened()== False):
     print("Error openingfile")
 frames = []
-for _ in range(0,1000):
+for _ in range(0,10000):
     ret, frame = cap.read()
     if ret:
         frames.append(frame)
@@ -322,15 +365,19 @@ height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fourcc = cv2.VideoWriter_fourcc(*'H264')
 fps = 30
 video_writer = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
-for i in range(1,200):
+for i in range(1,len(frames)):
     prev_frame = preProcessing(frames[i-1])
     cur_frame = preProcessing(frames[i])
     smoothFrame = VS.stabilize(prev_frame,cur_frame)
+    #print(smoothFrame.shape)
+    #preProcessing(smoothFrame)
+    #exit()
     smoothFrame = cv2.resize(smoothFrame,(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
     prev_frame_gray = cv2.cvtColor(prev_frame,cv2.COLOR_BGR2GRAY)
     cur_frame_gray = cv2.cvtColor(cur_frame,cv2.COLOR_BGR2GRAY)
     #print(f'{i}: Original MSE = {MSE(prev_frame_gray,cur_frame_gray)}, PSNR = {PSNR(MSE(prev_frame_gray,cur_frame_gray))}, SSIM = {SSIM(prev_frame_gray,cur_frame_gray)}')
     ORG_SSIM.append(SSIM(prev_frame_gray,cur_frame_gray))
+    VID_ORG_SSIM.append(video_SSIM(prev_frame,cur_frame))
     video_writer.write(smoothFrame)
 cap.release()
 video_writer.release()
@@ -343,3 +390,4 @@ plot_line_graph()
 plot_ssim()
 
 print(f'Average SSIM:\n1) Original Video:{np.average(ORG_SSIM)}\n2) Kalman Filter stabilized Video:{np.average(STB_SSIM)}')
+print(f'Average Video SSIM:\n1) Original Video:{np.average(VID_ORG_SSIM)}\n2) Kalman Filter stabilized Video:{np.average(VID_STB_SSIM)}')

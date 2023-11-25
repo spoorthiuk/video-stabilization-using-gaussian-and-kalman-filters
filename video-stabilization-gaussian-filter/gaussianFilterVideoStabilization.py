@@ -18,6 +18,8 @@ GAUSSIAN_TRANSY = []
 
 ORG_SSIM = []
 STB_SSIM = []
+VID_ORG_SSIM = []
+VID_STB_SSIM = []
 
 def brightness(image, value):
     return np.clip(image * value, 0, 255).astype(np.uint8)
@@ -59,6 +61,17 @@ def PSNR(mse):
     max_pixel_val =255
     psnr = 20 * np.log10(max_pixel_val / np.sqrt(mse))
     return round(psnr,2)
+
+def video_SSIM(img1, img2):
+    Wy = 0.8
+    Wcb = 0.1
+    Wcr = 0.1
+    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2YCrCb)
+    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2YCrCb)
+    Y_org, Cb_org, Cr_org = cv2.split(img1)
+    Y_stab, Cb_stab, Cr_stab = cv2.split(img2)
+    ssim = Wy* SSIM(Y_org,Y_stab) + Wcb* SSIM(Cb_org,Cb_stab) + Wcr* SSIM(Cr_org,Cr_stab)
+    return ssim
 
 def SSIM(img1, img2):
     return round(structural_similarity(img1, img2, win_size= 5),2)
@@ -156,6 +169,7 @@ class VideoStabilization():
         self.left = int(-left)
         self.right = int(right-img_shape[1])
         return int(-top), int(bottom-img_shape[0]), int(-left), int(right-img_shape[1])
+    
     def get_homography(self, img1, img2, motion = cv2.MOTION_EUCLIDEAN):
         imga = img1.copy().astype(np.float32)
         imgb = img2.copy().astype(np.float32)
@@ -279,6 +293,7 @@ for i in range(1, len(smoothFramesResized)):
     try:
         frame1 = frames[i-1]
         frame2 = frames[i]
+        VID_ORG_SSIM.append(video_SSIM(frame1,frame2))
         #ORG_SSIM.append(SSIM(frames[i-1],frames[i]))
         frame1 = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
         frame2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
@@ -307,6 +322,7 @@ for i in range(1, len(smoothFramesResized)):
     try:
         frame1 = smoothFramesResized[i-1]
         frame2 = smoothFramesResized[i]
+        VID_STB_SSIM.append(video_SSIM(frame1,frame2))
         frame1 = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
         frame2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
         STB_SSIM.append(SSIM(frame1,frame2))
