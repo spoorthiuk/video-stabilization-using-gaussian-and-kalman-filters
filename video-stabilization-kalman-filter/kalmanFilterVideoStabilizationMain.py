@@ -41,9 +41,9 @@ def smoothening(frame):
     return filtered_frame
 
 def preProcessing(frame):
-    luminance_frame = brightness(frame,1.1)
-    contrast_frame = contrast(luminance_frame, 0.9)
-    sharpened_frame = sharpening(contrast_frame)
+    #luminance_frame = brightness(frame,1.1)
+    #contrast_frame = contrast(luminance_frame, 0.9)
+    sharpened_frame = sharpening(frame)
     filtered_frame = sharpened_frame
     #low_pass_frame = sharpening(sharpened_frame)
     '''plt.figure()
@@ -122,8 +122,8 @@ def plot_ssim():
     plt.figure()
     plt.ylim([0,1])
     plt.ylabel('SSIM')
-    plt.plot(ORG_SSIM)
-    plt.plot(STB_SSIM)
+    plt.plot(VID_ORG_SSIM)
+    plt.plot(VID_STB_SSIM)
     plt.legend(['Original video\'s SSIM', 'Kalman Filter stabilized video\'s SSIM'])
     plt.show()
     
@@ -190,7 +190,7 @@ class VideoStabilization():
         self.transX = 0
         self.transY = 0
 
-        self.horizontalBorder = 10
+        self.horizontalBorder = 35
 
         self.smoothedMat = np.zeros((2, 3), dtype=np.float64)
         pass
@@ -228,12 +228,12 @@ class VideoStabilization():
 
         pass
 
-    def stabilize(self, frame1, frame2):
+    def stabilize(self, processed_frame1, processed_frame2,org_frame1, org_frame2):
         #print(frame1[0].shape)
-        colour_frame1 = frame1.copy()
-        colour_frame2 = frame2.copy()
-        frame1 = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
-        frame2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
+        colour_frame1 = org_frame1.copy()
+        colour_frame2 = org_frame2.copy()
+        frame1 = cv2.cvtColor(processed_frame1,cv2.COLOR_BGR2GRAY)
+        frame2 = cv2.cvtColor(processed_frame2,cv2.COLOR_BGR2GRAY)
         rows, cols = frame1.shape
         verticalBorder = self.horizontalBorder * rows / cols
         
@@ -306,7 +306,7 @@ class VideoStabilization():
         #smoothenedFrame = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
         smoothenedFrame = cv2.warpAffine(colour_frame1, self.smoothedMat, frame2.shape[::-1])
         smoothenedFrame = smoothenedFrame[int(verticalBorder):int(smoothenedFrame.shape[0]-verticalBorder),self.horizontalBorder:smoothenedFrame.shape[1]-self.horizontalBorder]
-        smoothenedFrame_gray = cv2.warpAffine(frame1, self.smoothedMat, frame2.shape[::-1])
+        smoothenedFrame_gray = cv2.warpAffine( cv2.cvtColor(colour_frame1,cv2.COLOR_BGR2GRAY), self.smoothedMat, frame2.shape[::-1])
         smoothenedFrame_gray = smoothenedFrame_gray[int(verticalBorder):int(smoothenedFrame_gray.shape[0]-verticalBorder),self.horizontalBorder:smoothenedFrame_gray.shape[1]-self.horizontalBorder]
             
         if(self.prev_frame != ''):
@@ -314,8 +314,8 @@ class VideoStabilization():
             noOfFramesToTrack = 200
             featureTrackingThreshold = 0.01
             minDistanceBetweenPoints = 10
-            features1 = cv2.goodFeaturesToTrack(self.prev_frame, noOfFramesToTrack, featureTrackingThreshold, minDistanceBetweenPoints)
-            features2, status, error = cv2.calcOpticalFlowPyrLK(self.prev_frame, smoothenedFrame_gray, features1, None)
+            features1 = cv2.goodFeaturesToTrack(self.prev_frame_processed, noOfFramesToTrack, featureTrackingThreshold, minDistanceBetweenPoints)
+            features2, status, error = cv2.calcOpticalFlowPyrLK(self.prev_frame_processed, smoothenedFrame_gray, features1, None)
             goodFeatures1 = []
             goodFeatures2 = []
             for i in range(0,len(status)):
@@ -335,17 +335,21 @@ class VideoStabilization():
             KALMAN_TRANSX.append(dx)
             KALMAN_TRANSY.append(dy)
             #print(f'KALMAN MSE = {MSE(self.prev_frame,smoothenedFrame_gray)}, PSNR = {PSNR(MSE(self.prev_frame,smoothenedFrame_gray))}, SSIM = {SSIM(self.prev_frame,smoothenedFrame_gray)}')
-            STB_SSIM.append(SSIM(self.prev_frame,smoothenedFrame_gray))
+            STB_SSIM.append(SSIM(self.prev_frame_processed,smoothenedFrame_gray))
             VID_STB_SSIM.append(video_SSIM(self.prev_frame_color,smoothenedFrame))
+        self.prev_frame_processed = preProcessing(smoothenedFrame_gray)
         self.prev_frame = smoothenedFrame_gray
         self.prev_frame_color = smoothenedFrame
         return smoothenedFrame
 
 input_output_path = {
-    'outdoor2' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor4.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor4.mp4'],
+    'outdoor1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor1.mp4'],
+    'outdoor2' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor2.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor2.mp4'],
+    'outdoor3' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor3.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor_3.mp4'],
+    'outdoor4' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor2.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor4.mp4'],
     'basketball' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/basketball.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_basketball.mp4'],
 }
-video = 'outdoor2'
+video = 'outdoor3'
 #cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
 input_video = input_output_path[video][0]
 cap = cv2.VideoCapture(input_video)
@@ -364,20 +368,24 @@ height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 #output_video = "stabilized_output.mp4"
 fourcc = cv2.VideoWriter_fourcc(*'H264')
 fps = 30
+
 video_writer = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 for i in range(1,len(frames)):
-    prev_frame = preProcessing(frames[i-1])
-    cur_frame = preProcessing(frames[i])
-    smoothFrame = VS.stabilize(prev_frame,cur_frame)
+    #prev_frame = preProcessing(frames[i-1])
+    #cur_frame = preProcessing(frames[i])
+    prev_frame = frames[i-1]
+    cur_frame = frames[i]
+    smoothFrame = VS.stabilize(prev_frame,cur_frame, frames[i-1], frames[i])
+    stb_frame_res = smoothFrame.shape
     #print(smoothFrame.shape)
     #preProcessing(smoothFrame)
     #exit()
     smoothFrame = cv2.resize(smoothFrame,(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
-    prev_frame_gray = cv2.cvtColor(prev_frame,cv2.COLOR_BGR2GRAY)
-    cur_frame_gray = cv2.cvtColor(cur_frame,cv2.COLOR_BGR2GRAY)
+    prev_frame_gray = cv2.cvtColor(frames[i-1],cv2.COLOR_BGR2GRAY)
+    cur_frame_gray = cv2.cvtColor(frames[i],cv2.COLOR_BGR2GRAY)
     #print(f'{i}: Original MSE = {MSE(prev_frame_gray,cur_frame_gray)}, PSNR = {PSNR(MSE(prev_frame_gray,cur_frame_gray))}, SSIM = {SSIM(prev_frame_gray,cur_frame_gray)}')
     ORG_SSIM.append(SSIM(prev_frame_gray,cur_frame_gray))
-    VID_ORG_SSIM.append(video_SSIM(prev_frame,cur_frame))
+    VID_ORG_SSIM.append(video_SSIM(frames[i-1],frames[i]))
     video_writer.write(smoothFrame)
 cap.release()
 video_writer.release()
@@ -388,6 +396,7 @@ plt.style.use('ggplot')
 #plot_line_animation()
 plot_line_graph()
 plot_ssim()
-
+print('Original resolution:',frames[2].shape)
+print('Stabilized resolution:',stb_frame_res)
 print(f'Average SSIM:\n1) Original Video:{np.average(ORG_SSIM)}\n2) Kalman Filter stabilized Video:{np.average(STB_SSIM)}')
 print(f'Average Video SSIM:\n1) Original Video:{np.average(VID_ORG_SSIM)}\n2) Kalman Filter stabilized Video:{np.average(VID_STB_SSIM)}')
