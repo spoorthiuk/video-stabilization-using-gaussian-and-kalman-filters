@@ -105,14 +105,14 @@ def plot_line_graph():
     plt.plot(KALMAN_TRANSX)
     plt.legend(['Orginal video','Kalman Filter stabilized video'])
     plt.ylim([-100,100])
-    plt.title('X Transform')
+    plt.title('X Translation')
     plt.show()
 
     plt.plot(ORG_TRANSY)
     plt.plot(KALMAN_TRANSY)
     plt.legend(['Orginal video','Kalman Filter stabilized video'])
     plt.ylim([-100,100])
-    plt.title('Y Transform')
+    plt.title('Y Translation')
     plt.show()
 
 x_vals = []
@@ -190,7 +190,7 @@ class VideoStabilization():
         self.transX = 0
         self.transY = 0
 
-        self.horizontalBorder = 35
+        self.horizontalBorder = 70
 
         self.smoothedMat = np.zeros((2, 3), dtype=np.float64)
         pass
@@ -348,6 +348,8 @@ input_output_path = {
     'outdoor3' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor3.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor_3.mp4'],
     'outdoor4' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor2.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_outdoor4.mp4'],
     'basketball' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/basketball.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_basketball.mp4'],
+    'drone' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/drone.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_drone.mp4'],
+    'selfie' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/selfie.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_selfie.mp4']
 }
 video = 'outdoor3'
 #cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
@@ -371,10 +373,10 @@ fps = 30
 
 video_writer = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 for i in range(1,len(frames)):
-    #prev_frame = preProcessing(frames[i-1])
-    #cur_frame = preProcessing(frames[i])
-    prev_frame = frames[i-1]
-    cur_frame = frames[i]
+    prev_frame = preProcessing(frames[i-1])
+    cur_frame = preProcessing(frames[i])
+    #prev_frame = frames[i-1]
+    #cur_frame = frames[i]
     smoothFrame = VS.stabilize(prev_frame,cur_frame, frames[i-1], frames[i])
     stb_frame_res = smoothFrame.shape
     #print(smoothFrame.shape)

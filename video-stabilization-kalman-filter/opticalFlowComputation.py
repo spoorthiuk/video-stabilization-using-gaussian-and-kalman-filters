@@ -2,20 +2,45 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/Foreman360p.mp4')
-if (cap.isOpened()== False):
-    print("Error openingfile")
-#read 40 frames and store it in a list
-frames = []
-for _ in range(0,40):
-    ret, frame = cap.read()
-    if ret:
-        gray_frame = gray_img = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-        frames.append(gray_frame)
+def smoothening(frame):
+    #Gaussian Low Pass Filterning the given image
+    gaussian_kernel_size = (3,3)
+    filtered_frame = cv2.GaussianBlur(filtered_frame, gaussian_kernel_size, sigmaX=0.2)
+    return filtered_frame
+def sharpening(frame):
+    #High Pass Filterning the given image
+    filter_3x3_hpf = np.array([[0,-1,0],[-1,5,-1],[0,-1,0]])
+    filtered_frame = cv2.filter2D(frame,-1,filter_3x3_hpf)
+    return filtered_frame
+
+def preProcessing(frame):
+    #luminance_frame = brightness(frame,1.1)
+    #contrast_frame = contrast(luminance_frame, 0.9)
+    sharpened_frame = sharpening(frame)
+    filtered_frame = sharpened_frame
+    return filtered_frame
+
+img = cv2.imread('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/stairs.jpeg')
+img = preProcessing(img)
+plt.subplot(2,2,1)
+plt.imshow(img)
+plt.title('Frame 1')
+frame = cv2.imread('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/stairs.jpeg')
+frame = preProcessing(frame)
+angle = 10
+center = (frame.shape[1] // 2, frame.shape[0] // 2)
+# Apply the rotation transformation
+rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+noisy_frame = cv2.warpAffine(frame, rotation_matrix, (frame.shape[1], frame.shape[0]))
+gray_frame = cv2.cvtColor(noisy_frame,cv2.COLOR_BGR2GRAY)
 
 # Load the two consecutive frames
-prev_frame = frames[9]
-curr_frame = frames[10]
+prev_idx = 9
+curr_idx = 10
+prev_frame = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+curr_frame = gray_frame
+original_image = img.copy()
+reference_frame = frame.copy()
 
 '''plt.figure()
 plt.imshow(prev_frame, cmap='gray')
@@ -54,16 +79,16 @@ plt.subplot(1,3,2)
 plt.imshow(curr_frame_cpy,cmap='gray')
 plt.title('Current Frame Frame')
 
-curr_frame = frames[10]
+curr_frame = img
 plt.subplot(1,3,3)
 for i in range(len(feature_points)):
     if status[i]:
         pt1 = tuple(corners[i][0])
         pt2 = tuple(curr_features[i])
         print(pt1,pt2)
-        cv2.arrowedLine(curr_frame, pt1, pt2, (0, 255, 0), 1)
+        cv2.arrowedLine(noisy_frame, pt1, pt2, (0, 255, 0), 1)
         #plt.quiver(pt1[1], pt1[0], pt2[1], pt2[0],linewidth = 0.5)
 
-plt.imshow(curr_frame, cmap='gray')
+plt.imshow(noisy_frame, cmap='gray')
 plt.title('Optical Flow Vectors')
 plt.show()

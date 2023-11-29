@@ -8,8 +8,6 @@ from scipy.ndimage import convolve
 from skimage.metrics import structural_similarity
 from matplotlib.animation import FuncAnimation
 
-Q1 = 0.004
-R1 = 0.5
 ORG_TRANSX = []
 ORG_TRANSY = []
 
@@ -22,25 +20,49 @@ VID_ORG_SSIM = []
 VID_STB_SSIM = []
 
 def brightness(image, value):
+    #modifys the luminance of a given image
     return np.clip(image * value, 0, 255).astype(np.uint8)
 
 def contrast(image, value):
+    #modifys the contrast of a given image
     mean = np.mean(image)
     return np.clip((image - mean) * value + mean, 0, 255).astype(np.uint8) 
 
 def sharpening(frame):
-    #High Pass Filterning and Gaussian Low Pass Filter
+    #High Pass Filterning the given image
     filter_3x3_hpf = np.array([[0,-1,0],[-1,5,-1],[0,-1,0]])
     filtered_frame = cv2.filter2D(frame,-1,filter_3x3_hpf)
-    gaussian_kernel_size = (5,5)
-    filtered_frame = cv2.GaussianBlur(filtered_frame, gaussian_kernel_size, sigmaX=1.2)
+    return filtered_frame
+
+def smoothening(frame):
+    #Gaussian Low Pass Filterning the given image
+    gaussian_kernel_size = (3,3)
+    filtered_frame = cv2.GaussianBlur(filtered_frame, gaussian_kernel_size, sigmaX=0.2)
     return filtered_frame
 
 def preProcessing(frame):
-    luminance_frame = brightness(frame, 0.9)
-    contrast_frame = contrast(luminance_frame, 1.2)
-    filtered_frame = sharpening(contrast_frame)
+    #luminance_frame = brightness(frame,1.1)
+    #contrast_frame = contrast(luminance_frame, 0.9)
+    sharpened_frame = sharpening(frame)
+    filtered_frame = sharpened_frame
+    #low_pass_frame = sharpening(sharpened_frame)
+    '''plt.figure()
+    plt.subplot(1,4,1)
+    plt.imshow(cv2.cvtColor(luminance_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Enhanced Luminance')
+    plt.subplot(1,4,2)
+    plt.imshow(cv2.cvtColor(contrast_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Enhanced Luminance + Contrast')
+    plt.subplot(1,4,3)
+    plt.imshow(cv2.cvtColor(sharpened_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Sharpened + Enhanced Luminance + Contrast')
+    plt.subplot(1,4,4)
+    plt.imshow(cv2.cvtColor(low_pass_frame,cv2.COLOR_RGB2BGR))
+    plt.title('Sharpened + Low Pas + Enhanced Luminance + Contrast')
+    plt.show()
+    exit()'''
     return filtered_frame
+    #return contrast_frame
 
 #function for getting the Mean Squared Error of two images
 def MSE(img1, img2):
@@ -81,16 +103,16 @@ def plot_line_graph():
     plt.figure()
     plt.plot(ORG_TRANSX)
     plt.plot(GAUSSIAN_TRANSX)
-    plt.legend(['Orginal video','Kalman Filter stabilized video'])
+    plt.legend(['Orginal video','Gaussian Filter stabilized video'])
     plt.ylim([-100,100])
-    plt.title('X Transform')
+    plt.title('X Translation')
     plt.show()
 
     plt.plot(ORG_TRANSY)
     plt.plot(GAUSSIAN_TRANSY)
-    plt.legend(['Orginal video','Kalman Filter stabilized video'])
+    plt.legend(['Orginal video','Gaussian Filter stabilized video'])
     plt.ylim([-100,100])
-    plt.title('Y Transform')
+    plt.title('Y Translation')
     plt.show()
 
 x_vals = []
@@ -100,9 +122,9 @@ def plot_ssim():
     plt.figure()
     plt.ylim([0,1])
     plt.ylabel('SSIM')
-    plt.plot(ORG_SSIM)
-    plt.plot(STB_SSIM)
-    plt.legend(['Original video\'s SSIM', 'Kalman Filter stabilized video\'s SSIM'])
+    plt.plot(VID_ORG_SSIM)
+    plt.plot(VID_STB_SSIM)
+    plt.legend(['Original video\'s SSIM', 'Gaussian Filter stabilized video\'s SSIM'])
     plt.show()
     
 def plot_line_animation():
@@ -122,10 +144,10 @@ def plot_line_animation():
         ax2.set_title('Y Transform')
         ax1.plot(t[:i],ORG_TRANSX[:i])
         ax1.plot(t[:i],GAUSSIAN_TRANSX[:i])
-        ax1.legend(['Orginal video','Kalman Filter stabilized video'])
+        ax1.legend(['Orginal video','Gaussian Filter stabilized video'])
         ax2.plot(t[:i],ORG_TRANSY[:i])
         ax2.plot(t[:i],GAUSSIAN_TRANSY[:i])
-        ax2.legend(['Orginal video','Kalman Filter stabilized video'])
+        ax2.legend(['Orginal video','Gaussian Filter stabilized video'])
     t = range(len(ORG_TRANSX))
     fig, (ax1, ax2) = plt.subplots(1,2)
     fig.set_size_inches([20,10])
@@ -234,18 +256,24 @@ class VideoStabilization():
         smoothened_frames= self.apply_warping_fullview(warp_stack=warp_stack-smoothed_warp)
         return smoothened_frames
 
+
 input_output_path = {
-    'rover1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/rover1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_rover1.mp4'],
-    'drone' : []
+    'outdoor1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_outdoor1.mp4'],
+    'outdoor2' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor2.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_outdoor2.mp4'],
+    'outdoor3' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor3.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_outdoor_3.mp4'],
+    'outdoor4' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/outdoor2.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_outdoor4.mp4'],
+    'basketball' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/basketball.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_basketball.mp4'],
+    '1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_1.mp4'],
+    'selfie' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/selfie.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussia_filter_selfie.mp4']
 }
-video = 'rover1'
+video = 'outdoor3'
 #cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
 input_video = input_output_path[video][0]
 cap = cv2.VideoCapture(input_video)
 if (cap.isOpened()== False):
     print("Error openingfile")
 frames = []
-for _ in range(0,1000):
+for _ in range(0,10000):
     ret, frame = cap.read()
     if ret:
         frames.append(frame)
@@ -261,8 +289,9 @@ fps = 30
 video_writer = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 #preprocessing the frames
 frame_stack = []
-for i in range(0,200):
-    frame = preProcessing(frames[i])
+for i in range(0,len(frames)):
+    #frame = preProcessing(frames[i])
+    frame = frames[i]
     frame_stack.append(frame)
 
 color = (255, 0, 0) 
@@ -270,12 +299,12 @@ color = (255, 0, 0)
 # Line thickness of 2 px 
 thickness = 2
 smoothFrames = VS.stabilize(frame_stack)
-padding_ver = 50
-padding_hor = int(padding_ver * 606/1000)
+padding_ver = 10
+padding_hor = int(padding_ver * frames[0].shape[0]/frames[0].shape[1])
 smoothFramesResized = []
 for smoothFrame in smoothFrames:
-    print(frame.shape,smoothFrame.shape)
     smoothFrame = cv2.resize(smoothFrame[int(VS.left)+padding_ver:int(smoothFrame.shape[0]-VS.right-padding_ver),VS.top+padding_hor:smoothFrame.shape[1]-VS.bottom-padding_hor], (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+    stb_frame_res = smoothFrame.shape
     smoothFramesResized.append(smoothFrame)
     video_writer.write(smoothFrame)
 cap.release()
@@ -351,4 +380,8 @@ plt.style.use('ggplot')
 plot_line_graph()
 plot_ssim()
 
-print(f'Average SSIM:\n1) Original Video:{np.average(ORG_SSIM)}\n2) Kalman Filter stabilized Video:{np.average(STB_SSIM)}')
+print('Original resolution:',frames[2].shape)
+print('Stabilized resolution:',stb_frame_res)
+
+print(f'Average SSIM:\n1) Original Video:{np.average(ORG_SSIM)}\n2) Gaussian Filter stabilized Video:{np.average(STB_SSIM)}')
+print(f'Average Video SSIM:\n1) Original Video:{np.average(VID_ORG_SSIM)}\n2) Gaussian Filter stabilized Video:{np.average(VID_STB_SSIM)}')
