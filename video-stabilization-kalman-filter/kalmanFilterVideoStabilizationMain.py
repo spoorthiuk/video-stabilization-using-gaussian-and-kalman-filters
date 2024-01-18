@@ -351,7 +351,7 @@ input_output_path = {
     'drone' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/drone.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_drone.mp4'],
     'selfie' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/selfie.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/kalman_filter_selfie.mp4']
 }
-video = 'outdoor3'
+video = 'selfie'
 #cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
 input_video = input_output_path[video][0]
 cap = cv2.VideoCapture(input_video)

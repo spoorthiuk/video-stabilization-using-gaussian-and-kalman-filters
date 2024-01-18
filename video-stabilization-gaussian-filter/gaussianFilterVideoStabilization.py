@@ -266,7 +266,7 @@ input_output_path = {
     '1' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/1.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussian_filter_1.mp4'],
     'selfie' : ['/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/selfie.mp4','/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/results/gaussia_filter_selfie.mp4']
 }
-video = 'outdoor3'
+video = 'selfie'
 #cap = cv2.VideoCapture('/Users/spoorthiuk/ASU/digital-video-processing/video-stabalization/assets/32.mp4')
 input_video = input_output_path[video][0]
 cap = cv2.VideoCapture(input_video)
@@ -302,8 +302,18 @@ smoothFrames = VS.stabilize(frame_stack)
 padding_ver = 10
 padding_hor = int(padding_ver * frames[0].shape[0]/frames[0].shape[1])
 smoothFramesResized = []
-for smoothFrame in smoothFrames:
+for idx,smoothFrame in enumerate(smoothFrames):
+    plt.subplot(1,3,1)
+    plt.imshow(cv2.cvtColor(frames[idx], cv2.COLOR_RGB2BGR))
+    #plt.show()
+    plt.subplot(1,3,2)
+    plt.imshow(cv2.cvtColor(smoothFrame, cv2.COLOR_RGB2BGR))
+   
     smoothFrame = cv2.resize(smoothFrame[int(VS.left)+padding_ver:int(smoothFrame.shape[0]-VS.right-padding_ver),VS.top+padding_hor:smoothFrame.shape[1]-VS.bottom-padding_hor], (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+
+    plt.subplot(1,3,3)
+    plt.imshow(cv2.cvtColor(smoothFrame, cv2.COLOR_RGB2BGR))
+    plt.show()
     stb_frame_res = smoothFrame.shape
     smoothFramesResized.append(smoothFrame)
     video_writer.write(smoothFrame)
