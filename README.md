@@ -1,5 +1,14 @@
 # Adaptive Video Stabilization With Kalman Filter and Gaussian Filter
-
+<p align="center">
+ <img src="https://github.com/spoorthiuk/video-stabilization-using-gaussian-and-kalman-filters/blob/main/assets/original.gif" alt="Description" /><br>
+  <p align="center">Original Video</p>
+  <p align="center">
+ <img src="https://github.com/spoorthiuk/video-stabilization-using-gaussian-and-kalman-filters/blob/main/assets/kalman%20filtered.gif" alt="Description" /></p>
+   <p align="center">Kalman Filtered Video</p>
+   <p align="center">
+ <img src="https://github.com/spoorthiuk/video-stabilization-using-gaussian-and-kalman-filters/blob/main/assets/gaussian.gif" alt="Description" /></p>
+  <p align="center">Gaussian Filtered Video</p>
+</p>
 ## 1 Introduction
 Our project focuses on mitigating motion jitters in UAVs and drones with low-cost cameras. Using a software- based video processing solution, we employ the Kalman and Gaussian Filters to enhance corner detection, estimate motion, and dynamically modify an affine matrix for smooth transitions. Stabilized videos are quantitatively compared through the average Structural Similarity Index (SSIM) to assess our solution's effectiveness in reducing undesired motion jitters.
 
